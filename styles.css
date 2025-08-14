@@ -1,0 +1,31 @@
+*{box-sizing:border-box}html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Inter,system-ui}body{background:#0c0c0e;color:#fafafa}
+.app-header,.app-footer{position:sticky;z-index:3;backdrop-filter:saturate(180%) blur(10px)}
+.app-header{top:0;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(10,10,10,.85);border-bottom:1px solid #222}
+.app-footer{bottom:0;padding:8px 16px;background:rgba(10,10,10,.8);border-top:1px solid #222}
+.brand{display:flex;gap:8px;align-items:center;font-weight:700}
+.logo{font-size:20px}
+.app{padding:10px 12px 70px;max-width:860px;margin:0 auto}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px}
+.tabs button{padding:10px;border-radius:10px;background:#151518;color:#ddd;border:1px solid #24242a}
+.tabs button.active{background:#2563eb;border-color:#3b82f6;color:#fff}
+.tab{display:none}.tab.active{display:block}
+h2{margin:6px 2px 8px;font-size:20px}
+.card{background:#121215;border:1px solid #24242a;border-radius:14px;padding:12px;margin:8px 0}
+.cards.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.list{list-style:none;padding:0;margin:0}.list li{display:flex;align-items:center;justify-content:space-between;padding:10px;border-bottom:1px solid #1e1e22}
+.list li:last-child{border-bottom:0}
+.list.small li{padding:8px;font-size:14px}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.center{text-align:center}
+.big-number{font-size:32px;font-weight:800;letter-spacing:.5px}
+.label{font-size:12px;color:#aaa;text-transform:uppercase;letter-spacing:.8px}
+.btn{background:#1b1b20;border:1px solid #2a2a31;color:#eaeaea;padding:10px 14px;border-radius:10px;font-weight:600}
+.btn.small{padding:6px 10px;font-size:12px}
+.btn.primary{background:#3b82f6;border-color:#60a5fa;color:#fff}
+.btn.danger{background:#7f1d1d;border-color:#ef4444}
+.muted{color:#aaa}.small{font-size:12px}
+.checkbox{display:inline-flex;align-items:center;gap:8px}
+.progress{height:8px;border-radius:999px;background:#1c1c22;overflow:hidden}
+.progress > div{height:100%;background:#16a34a}
+input[type='time']{background:#0f0f12;color:#fff;border:1px solid #2a2a31;border-radius:8px;padding:8px}
+@media (max-width:520px){.cards.two{grid-template-columns:1fr}}

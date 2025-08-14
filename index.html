@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Muscu Coach">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <title>Muscu Coach</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <span class="logo">💪</span>
+      <span>Muscu Coach</span>
+    </div>
+    <button id="installBtn" class="btn small" hidden>Installer</button>
+  </header>
+
+  <main id="app" class="app">
+    <nav class="tabs">
+      <button data-tab="today" class="active">Aujourd’hui</button>
+      <button data-tab="plan">Planning</button>
+      <button data-tab="timer">Chrono</button>
+      <button data-tab="stats">Stats</button>
+      <button data-tab="settings">Réglages</button>
+    </nav>
+
+    <section id="today" class="tab active">
+      <h2 id="todayTitle">Séance du jour</h2>
+      <div id="todaySummary" class="muted"></div>
+      <ul id="todayList" class="card list"></ul>
+      <div class="card">
+        <div class="row">
+          <button class="btn" id="resetToday">Réinitialiser la journée</button>
+          <button class="btn primary" id="markDone">Marquer terminé</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="plan" class="tab">
+      <h2>Planning semaine</h2>
+      <div id="planContainer" class="card"></div>
+    </section>
+
+    <section id="timer" class="tab">
+      <h2>Chronomètre / Repos</h2>
+      <div class="card center">
+        <div id="stopwatch" class="big-number">00:00.0</div>
+        <div class="row">
+          <button id="swStart" class="btn primary">Démarrer</button>
+          <button id="swPause" class="btn">Pause</button>
+          <button id="swReset" class="btn">Reset</button>
+        </div>
+      </div>
+
+      <div class="card center">
+        <div class="row">
+          <button class="btn" data-rest="30">Repos 30s</button>
+          <button class="btn" data-rest="45">Repos 45s</button>
+          <button class="btn" data-rest="60">Repos 60s</button>
+          <button class="btn" data-rest="90">Repos 90s</button>
+        </div>
+        <div id="restCountdown" class="big-number">Repos: 0s</div>
+      </div>
+    </section>
+
+    <section id="stats" class="tab">
+      <h2>Statistiques</h2>
+      <div class="cards two">
+        <div class="card center">
+          <div class="label">Séances faites</div>
+          <div id="sessionsDone" class="big-number">0</div>
+        </div>
+        <div class="card center">
+          <div class="label">Streak (jours)</div>
+          <div id="streakDays" class="big-number">0</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Historique</h3>
+        <ul id="historyList" class="list small"></ul>
+      </div>
+    </section>
+
+    <section id="settings" class="tab">
+      <h2>Réglages</h2>
+      <div class="card">
+        <label class="row">
+          <span>Heure du rappel quotidien</span>
+          <input type="time" id="reminderTime" value="18:00">
+        </label>
+        <div class="row">
+          <button id="askNotify" class="btn">Autoriser notifications</button>
+          <button id="testNotify" class="btn">Tester une notif</button>
+        </div>
+        <p class="muted small">Les notifications programmées fonctionnent quand l’app est ouverte en arrière-plan. iOS limite les alarmes exactes pour les PWA.</p>
+      </div>
+      <div class="card">
+        <div class="row">
+          <button id="backupBtn" class="btn">Exporter sauvegarde</button>
+          <input type="file" id="restoreInput" accept="application/json" hidden>
+          <button id="restoreBtn" class="btn">Importer sauvegarde</button>
+        </div>
+        <button id="resetAll" class="btn danger">Tout réinitialiser</button>
+      </div>
+      <div class="card">
+        <p class="muted small">Conseil: pour progresser, augmente d’abord les répétitions/tempo avant d’ajouter du poids.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <span class="muted small">v1.0 • Offline prêt • Fait pour Ismael</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
