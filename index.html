@@ -1,121 +1,200 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="no-js">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0a0a0a">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Muscu Coach">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="manifest" href="manifest.json">
-  <title>Muscu Coach</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0d14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="IsmaCoach" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <title>IsmaCoach</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header class="app-header">
+  <header class="topbar">
     <div class="brand">
-      <span class="logo">💪</span>
-      <span>Muscu Coach</span>
+      <span class="logo" aria-hidden="true">💪</span>
+      <span class="title">IsmaCoach</span>
     </div>
-    <button id="installBtn" class="btn small" hidden>Installer</button>
+    <div class="actions">
+      <button id="installBtn" class="btn ghost small" hidden>Installer</button>
+    </div>
   </header>
 
-  <main id="app" class="app">
-    <nav class="tabs">
-      <button data-tab="today" class="active">Aujourd’hui</button>
-      <button data-tab="plan">Planning</button>
-      <button data-tab="timer">Chrono</button>
-      <button data-tab="stats">Stats</button>
-      <button data-tab="settings">Réglages</button>
+  <main class="container">
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="today" role="tab">Aujourd’hui</button>
+      <button class="tab" data-tab="calendar" role="tab">Calendrier</button>
+      <button class="tab" data-tab="timer" role="tab">Chrono</button>
+      <button class="tab" data-tab="stats" role="tab">Stats</button>
+      <button class="tab" data-tab="settings" role="tab">Réglages</button>
     </nav>
 
-    <section id="today" class="tab active">
-      <h2 id="todayTitle">Séance du jour</h2>
-      <div id="todaySummary" class="muted"></div>
-      <ul id="todayList" class="card list"></ul>
+    <!-- TODAY -->
+    <section id="today" class="panel active">
       <div class="card">
+        <div class="card-header">
+          <h2 id="todayTitle">Séance du jour</h2>
+          <div class="sub" id="todaySubtitle"></div>
+        </div>
+
+        <div class="progress">
+          <div id="todayProgress" class="progress-bar" style="width:0%"></div>
+        </div>
+        <div class="progress-info">
+          <span id="todayPct">0%</span>
+          <button id="resetToday" class="btn ghost small">Réinitialiser</button>
+        </div>
+
+        <ul id="todayList" class="list"></ul>
+
         <div class="row">
-          <button class="btn" id="resetToday">Réinitialiser la journée</button>
-          <button class="btn primary" id="markDone">Marquer terminé</button>
+          <button id="markDone" class="btn primary full">Marquer terminé</button>
         </div>
       </div>
     </section>
 
-    <section id="plan" class="tab">
-      <h2>Planning semaine</h2>
-      <div id="planContainer" class="card"></div>
+    <!-- CALENDAR -->
+    <section id="calendar" class="panel">
+      <div class="card">
+        <h2>Calendrier de la semaine</h2>
+        <div class="day-picker" id="dayPicker"></div>
+        <ul id="dayPlanList" class="list"></ul>
+
+        <div class="row">
+          <button id="addExerciseBtn" class="btn">Ajouter un exercice</button>
+          <button id="resetSelectedDay" class="btn ghost">Réinitialiser ce jour</button>
+        </div>
+      </div>
+
+      <!-- Modal éditeur d’exercices -->
+      <dialog id="exerciseModal" class="modal">
+        <form method="dialog" class="modal-body">
+          <h3 id="modalTitle">Nouvel exercice</h3>
+          <label>Nom
+            <input id="exoName" type="text" placeholder="Pompes" required />
+          </label>
+          <label>Séries
+            <input id="exoSets" type="number" min="1" step="1" value="3" />
+          </label>
+          <label>Répétitions / temps
+            <input id="exoReps" type="text" placeholder="12–15" />
+          </label>
+          <label>Repos (secondes)
+            <input id="exoRest" type="number" min="0" step="5" value="45" />
+          </label>
+          <div class="row">
+            <button id="saveExercise" class="btn primary" value="default">Enregistrer</button>
+            <button class="btn ghost" value="cancel">Annuler</button>
+          </div>
+        </form>
+      </dialog>
     </section>
 
-    <section id="timer" class="tab">
-      <h2>Chronomètre / Repos</h2>
+    <!-- TIMER -->
+    <section id="timer" class="panel">
       <div class="card center">
-        <div id="stopwatch" class="big-number">00:00.0</div>
+        <h2>Chronomètre</h2>
+        <div id="stopwatch" class="big">00:00.0</div>
         <div class="row">
           <button id="swStart" class="btn primary">Démarrer</button>
           <button id="swPause" class="btn">Pause</button>
-          <button id="swReset" class="btn">Reset</button>
+          <button id="swReset" class="btn ghost">Reset</button>
         </div>
       </div>
 
       <div class="card center">
-        <div class="row">
-          <button class="btn" data-rest="30">Repos 30s</button>
-          <button class="btn" data-rest="45">Repos 45s</button>
-          <button class="btn" data-rest="60">Repos 60s</button>
-          <button class="btn" data-rest="90">Repos 90s</button>
+        <h2>Repos</h2>
+        <div class="ring" aria-label="Compte à rebours">
+          <svg viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="54" class="track"></circle>
+            <circle cx="60" cy="60" r="54" class="progress" id="restArc"></circle>
+          </svg>
+          <div class="ring-label" id="restDisplay">0s</div>
         </div>
-        <div id="restCountdown" class="big-number">Repos: 0s</div>
+        <div class="row wrap">
+          <button class="btn" data-rest="30">30s</button>
+          <button class="btn" data-rest="45">45s</button>
+          <button class="btn" data-rest="60">60s</button>
+          <button class="btn" data-rest="90">90s</button>
+        </div>
       </div>
     </section>
 
-    <section id="stats" class="tab">
-      <h2>Statistiques</h2>
+    <!-- STATS -->
+    <section id="stats" class="panel">
       <div class="cards two">
         <div class="card center">
-          <div class="label">Séances faites</div>
-          <div id="sessionsDone" class="big-number">0</div>
+          <div class="kpi" id="kpiSessions">0</div>
+          <div class="kpi-label">Séances faites</div>
         </div>
         <div class="card center">
-          <div class="label">Streak (jours)</div>
-          <div id="streakDays" class="big-number">0</div>
+          <div class="kpi" id="kpiStreak">0</div>
+          <div class="kpi-label">Streak (jours)</div>
         </div>
       </div>
+
+      <div class="card">
+        <h3>Objectif hebdo</h3>
+        <div class="row middle">
+          <div class="gauge">
+            <div class="gauge-fill" id="goalFill" style="width:0%"></div>
+          </div>
+          <span id="goalText" class="muted">0/5</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Graphiques</h3>
+        <canvas id="chartWeekly" width="360" height="160" aria-label="Progression hebdo"></canvas>
+      </div>
+
       <div class="card">
         <h3>Historique</h3>
         <ul id="historyList" class="list small"></ul>
       </div>
     </section>
 
-    <section id="settings" class="tab">
-      <h2>Réglages</h2>
+    <!-- SETTINGS -->
+    <section id="settings" class="panel">
       <div class="card">
-        <label class="row">
-          <span>Heure du rappel quotidien</span>
-          <input type="time" id="reminderTime" value="18:00">
-        </label>
+        <h2>Rappels</h2>
         <div class="row">
-          <button id="askNotify" class="btn">Autoriser notifications</button>
-          <button id="testNotify" class="btn">Tester une notif</button>
+          <label class="inline">Heure
+            <input type="time" id="reminderTime" value="18:00" />
+          </label>
+          <button id="askNotify" class="btn">Autoriser</button>
+          <button id="testNotify" class="btn">Tester notif</button>
         </div>
-        <p class="muted small">Les notifications programmées fonctionnent quand l’app est ouverte en arrière-plan. iOS limite les alarmes exactes pour les PWA.</p>
+        <p class="muted small">
+          iOS limite les rappels exacts pour les PWA. La notif se déclenche autour de l’heure choisie quand la PWA est ouverte (même en arrière-plan).
+        </p>
       </div>
+
       <div class="card">
+        <h2>Données</h2>
         <div class="row">
-          <button id="backupBtn" class="btn">Exporter sauvegarde</button>
-          <input type="file" id="restoreInput" accept="application/json" hidden>
-          <button id="restoreBtn" class="btn">Importer sauvegarde</button>
+          <button id="backupBtn" class="btn">Exporter</button>
+          <input id="restoreInput" type="file" accept="application/json" hidden />
+          <button id="restoreBtn" class="btn">Importer</button>
         </div>
         <button id="resetAll" class="btn danger">Tout réinitialiser</button>
       </div>
+
       <div class="card">
-        <p class="muted small">Conseil: pour progresser, augmente d’abord les répétitions/tempo avant d’ajouter du poids.</p>
+        <h2>Apparence</h2>
+        <div class="row">
+          <button id="toggleTheme" class="btn ghost">Forcer clair/sombre</button>
+        </div>
+        <p class="muted small">Par défaut : thème clair le jour / sombre le soir.</p>
       </div>
     </section>
   </main>
 
-  <footer class="app-footer">
-    <span class="muted small">v1.0 • Offline prêt • Fait pour Ismael</span>
+  <footer class="bottombar">
+    <span class="muted small">IsmaCoach v2 • PWA Offline</span>
   </footer>
 
   <script src="app.js"></script>

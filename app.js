@@ -1,4 +1,19 @@
-// ===== Data & Storage =====
+/* =========================
+   IsmaCoach v2 – App logic
+   ========================= */
+
+// ---- THEME (auto sombre le soir) ----
+const THEME = { autoDarkFromHour: 19, autoLightFromHour: 7 };
+(function applyTheme() {
+  const h = new Date().getHours();
+  const night = h >= THEME.autoDarkFromHour || h < THEME.autoLightFromHour;
+  document.documentElement.classList.toggle('light', !night);
+})();
+document.getElementById('toggleTheme')?.addEventListener('click', () => {
+  document.documentElement.classList.toggle('light');
+});
+
+// ---- DATA MODEL ----
 const DEFAULT_PLAN = [
   // 0=Dim, 1=Lun, ... 6=Sam
   { day: 1, title: "Haut du corps (Push)", items: [
@@ -49,163 +64,333 @@ const DEFAULT_PLAN = [
 
 const store = {
   load() {
-    try {
-      const data = JSON.parse(localStorage.getItem('mc.data'));
-      if (data) return data;
-    } catch {}
+    try { const d = JSON.parse(localStorage.getItem('ic.data')); if (d) return d; } catch {}
     return {
       plan: DEFAULT_PLAN,
-      progress: {}, // key: yyyy-mm-dd -> { "exoName": completedSets, ... }
+      progress: {}, // 'yyyy-mm-dd': { exoName: completedSets }
       stats: { sessionsDone: 0, streak: 0, lastDone: null },
-      settings: { reminder: "18:00" }
+      settings: { reminder: "18:00", weeklyGoal: 5 }
     };
   },
-  save(data) { localStorage.setItem('mc.data', JSON.stringify(data)); },
+  save(data) { localStorage.setItem('ic.data', JSON.stringify(data)); },
   export() { return JSON.stringify(appData, null, 2); },
-  import(json) { appData = JSON.parse(json); store.save(appData); renderAll(); }
+  import(json) { appData = JSON.parse(json); store.save(appData); renderAll(); },
 };
 
 let appData = store.load();
 
-// ===== Utils =====
-const $ = sel => document.querySelector(sel);
-const $$ = sel => Array.from(document.querySelectorAll(sel));
-const weekday = d => ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"][d];
-const todayKey = () => new Date().toISOString().slice(0,10);
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const weekdayName = i => ["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"][i];
+const fullWeekday = i => ["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"][i];
+const todayISO = () => new Date().toISOString().slice(0, 10);
 
-// ===== Tabs =====
-$$('.tabs button').forEach(btn=>btn.addEventListener('click', e=>{
-  $$('.tabs button').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  const tab = btn.dataset.tab;
-  $$('.tab').forEach(s=>s.classList.remove('active'));
-  document.getElementById(tab).classList.add('active');
+// ---- TABS ----
+$$('.tabs .tab').forEach(b => b.addEventListener('click', () => {
+  $$('.tabs .tab').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  $$('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(b.dataset.tab).classList.add('active');
 }));
 
-// ===== Today view =====
+// ---- TODAY ----
+function getPlanByWeekday(idx) {
+  return appData.plan.find(p => p.day === idx);
+}
 function getTodayPlan() {
-  const wd = new Date().getDay(); // 0=Dim
-  return appData.plan.find(p=>p.day===wd);
+  return getPlanByWeekday(new Date().getDay());
 }
 
 function renderToday() {
-  const today = getTodayPlan();
-  const list = $('#todayList'); list.innerHTML = '';
-  $('#todayTitle').textContent = `Séance du ${weekday(new Date().getDay())}`;
-  $('#todaySummary').textContent = today ? today.title : 'Repos';
+  const plan = getTodayPlan();
+  const wd = new Date().getDay();
+  $('#todayTitle').textContent = `Séance du ${fullWeekday(wd)}`;
+  $('#todaySubtitle').textContent = plan ? plan.title : 'Repos';
 
-  const prog = appData.progress[todayKey()] || {};
-  if (today) {
-    today.items.forEach(exo => {
+  const ul = $('#todayList'); ul.innerHTML = '';
+  let totalSets = 0, doneSets = 0;
+  const key = todayISO();
+  const prog = appData.progress[key] || {};
+
+  if (plan) {
+    plan.items.forEach(exo => {
+      totalSets += exo.sets;
       const done = prog[exo.name] || 0;
+      doneSets += done;
+
       const li = document.createElement('li');
       const left = document.createElement('div');
-      left.innerHTML = `<div class="checkbox"><input type="checkbox" ${done>=exo.sets?'checked':''} disabled><strong>${exo.name}</strong></div>
-      <div class="muted small">${exo.sets} séries • ${exo.reps} • repos ${exo.rest}s</div>`;
+      left.innerHTML = `<strong>${exo.name}</strong><div class="sub">${exo.sets} séries • ${exo.reps} • repos ${exo.rest}s</div>`;
       const right = document.createElement('div');
-      const dec = document.createElement('button'); dec.className='btn small'; dec.textContent='-';
-      const counter = document.createElement('span'); counter.textContent = `${done}/${exo.sets}`; counter.style.margin='0 6px';
+      const dec = document.createElement('button'); dec.className='btn small ghost'; dec.textContent='-';
+      const c = document.createElement('span'); c.style.margin='0 8px'; c.textContent = `${done}/${exo.sets}`;
       const inc = document.createElement('button'); inc.className='btn small'; inc.textContent='+';
-      dec.onclick = ()=>updateSet(exo.name, -1);
-      inc.onclick = ()=>{ updateSet(exo.name, +1); if (exo.rest>0) startRest(exo.rest); };
-      right.append(dec, counter, inc);
-      li.append(left, right);
-      list.append(li);
+
+      dec.onclick = () => updateSet(exo.name, -1);
+      inc.onclick = () => { updateSet(exo.name, +1); if (exo.rest>0) startRest(exo.rest); };
+
+      right.append(dec,c,inc);
+      li.append(left,right);
+      ul.append(li);
     });
   } else {
-    list.innerHTML = '<li>Aucune séance prévue.</li>';
+    ul.innerHTML = '<li>Repos aujourd’hui. Marche, mobilité, hydratation 💧</li>';
   }
-}
 
+  const pct = totalSets ? Math.round(doneSets*100/totalSets) : 100;
+  $('#todayProgress').style.width = pct + '%';
+  $('#todayPct').textContent = pct + '%';
+}
 function updateSet(exoName, delta) {
-  const key = todayKey();
-  const today = getTodayPlan();
-  if (!today) return;
-  const exo = today.items.find(i=>i.name===exoName);
+  const plan = getTodayPlan(); if (!plan) return;
+  const key = todayISO();
   appData.progress[key] = appData.progress[key] || {};
-  const current = appData.progress[key][exoName] || 0;
-  const next = Math.max(0, Math.min(exo.sets, current + delta));
+  const exo = plan.items.find(i => i.name === exoName);
+  const cur = appData.progress[key][exoName] || 0;
+  const next = Math.max(0, Math.min(exo.sets, cur + delta));
   appData.progress[key][exoName] = next;
   store.save(appData);
   renderToday();
 }
+$('#resetToday').addEventListener('click', () => {
+  appData.progress[todayISO()] = {};
+  store.save(appData);
+  renderToday();
+});
+$('#markDone').addEventListener('click', () => {
+  const plan = getTodayPlan(); if (!plan) return;
+  const key = todayISO();
+  const prog = appData.progress[key] || {};
+  const all = plan.items.every(x => (prog[x.name] || 0) >= x.sets);
+  if (!all) { notify('Pas encore fini', 'Complète toutes les séries.'); return; }
 
-$('#resetToday').onclick = ()=>{ appData.progress[todayKey()] = {}; store.save(appData); renderToday(); };
-$('#markDone').onclick = ()=>{
-  // if all sets completed
-  const today = getTodayPlan(); if (!today) return;
-  const prog = appData.progress[todayKey()] || {};
-  const allDone = today.items.every(x => (prog[x.name]||0) >= x.sets);
-  if (allDone) {
-    const d = new Date();
-    const last = appData.stats.lastDone ? new Date(appData.stats.lastDone) : null;
-    const diffDays = last ? Math.floor((d.setHours(0,0,0,0) - last.setHours(0,0,0,0))/(1000*60*60*24)) : null;
-    appData.stats.streak = diffDays === 1 ? appData.stats.streak + 1 : (diffDays === 0 ? appData.stats.streak : 1);
-    appData.stats.sessionsDone += 1;
-    appData.stats.lastDone = new Date().toISOString();
-    store.save(appData);
-    renderStats();
-    notify('Séance terminée', 'Bien joué !');
-  } else {
-    notify('Pas encore fini', 'Complète toutes les séries avant de valider.');
+  const now = new Date();
+  const last = appData.stats.lastDone ? new Date(appData.stats.lastDone) : null;
+  const diffDays = last ? Math.floor((now.setHours(0,0,0,0) - last.setHours(0,0,0,0)) / 86400000) : null;
+  appData.stats.streak = diffDays === 1 ? appData.stats.streak + 1 : (diffDays === 0 ? appData.stats.streak : 1);
+  appData.stats.sessionsDone += 1;
+  appData.stats.lastDone = new Date().toISOString();
+  store.save(appData);
+  renderStats();
+  notify('Séance terminée', 'Bien joué 💥');
+});
+
+// ---- CALENDAR + EDITOR ----
+let selectedDay = new Date().getDay(); // 0..6
+function renderDayPicker() {
+  const dp = $('#dayPicker'); dp.innerHTML = '';
+  for (let i=0;i<7;i++){
+    const btn = document.createElement('button');
+    btn.textContent = weekdayName(i);
+    btn.className = i===selectedDay ? 'active' : '';
+    btn.addEventListener('click', ()=>{ selectedDay = i; renderCalendarList(); renderDayPicker(); });
+    dp.append(btn);
   }
-};
+}
+function renderCalendarList() {
+  const plan = getPlanByWeekday(selectedDay);
+  const ul = $('#dayPlanList'); ul.innerHTML='';
+  const title = plan ? plan.title : 'Repos';
+  const head = document.createElement('li');
+  head.innerHTML = `<div><strong>${fullWeekday(selectedDay)}</strong><div class="sub">${title}</div></div>`;
+  ul.append(head);
 
-// ===== Plan view =====
-function renderPlan() {
-  const cont = $('#planContainer'); cont.innerHTML = '';
-  const grid = document.createElement('div');
-  grid.className = 'list';
-  appData.plan.sort((a,b)=>a.day-b.day).forEach(day=>{
+  if (!plan) return;
+
+  plan.items.forEach((exo, idx) => {
     const li = document.createElement('li');
     const left = document.createElement('div');
-    left.innerHTML = `<strong>${weekday(day.day)}</strong><div class="muted small">${day.title}</div>`;
+    left.innerHTML = `<strong>${exo.name}</strong><div class="sub">${exo.sets} séries • ${exo.reps} • repos ${exo.rest}s</div>`;
     const right = document.createElement('div');
-    const btn = document.createElement('button'); btn.className='btn small'; btn.textContent='Voir';
-    btn.onclick = ()=>{
-      alert(day.items.map(i=>`• ${i.name} — ${i.sets}x ${i.reps} (repos ${i.rest}s)`).join('\n'));
-    };
-    right.append(btn);
+    const edit = document.createElement('button'); edit.className='btn small'; edit.textContent='✏️';
+    const del = document.createElement('button'); del.className='btn small ghost'; del.textContent='🗑️';
+    edit.onclick = ()=> openModal(exo, idx);
+    del.onclick = ()=> { if (confirm('Supprimer cet exercice ?')) { plan.items.splice(idx,1); store.save(appData); renderCalendarList(); if (selectedDay===new Date().getDay()) renderToday(); } };
+    right.append(edit, del);
     li.append(left,right);
-    grid.append(li);
+    ul.append(li);
   });
-  cont.append(grid);
 }
+$('#addExerciseBtn').addEventListener('click', ()=> openModal());
+$('#resetSelectedDay').addEventListener('click', ()=>{
+  if (selectedDay === new Date().getDay()) {
+    // reset progress for today only
+    appData.progress[todayISO()] = {};
+  }
+  // reset plan of the selected day to default
+  const def = DEFAULT_PLAN.find(p=>p.day===selectedDay);
+  const idx = appData.plan.findIndex(p=>p.day===selectedDay);
+  if (def) {
+    if (idx>=0) appData.plan[idx] = JSON.parse(JSON.stringify(def));
+    else appData.plan.push(JSON.parse(JSON.stringify(def)));
+  } else {
+    if (idx>=0) appData.plan.splice(idx,1);
+  }
+  store.save(appData);
+  renderCalendarList();
+  if (selectedDay === new Date().getDay()) renderToday();
+});
 
-// ===== Stats view =====
+const modal = $('#exerciseModal');
+const exoName = $('#exoName'), exoSets = $('#exoSets'), exoReps = $('#exoReps'), exoRest = $('#exoRest');
+let editIndex = null;
+function openModal(exo=null, index=null){
+  $('#modalTitle').textContent = exo ? 'Modifier exercice' : 'Nouvel exercice';
+  exoName.value = exo?.name || '';
+  exoSets.value = exo?.sets ?? 3;
+  exoReps.value = exo?.reps || '';
+  exoRest.value = exo?.rest ?? 45;
+  editIndex = index;
+  modal.showModal();
+}
+$('#saveExercise').addEventListener('click', (e)=>{
+  e.preventDefault();
+  const plan = getPlanByWeekday(selectedDay);
+  if (!plan) {
+    // créer un nouveau jour si c'était vide
+    appData.plan.push({ day: selectedDay, title: "Personnalisé", items: [] });
+  }
+  const target = getPlanByWeekday(selectedDay);
+  const newExo = { name: exoName.value.trim(), sets: Math.max(1, parseInt(exoSets.value||'1',10)), reps: exoReps.value.trim(), rest: Math.max(0, parseInt(exoRest.value||'0',10)) };
+  if (!newExo.name) return;
+  if (editIndex==null) target.items.push(newExo);
+  else target.items[editIndex] = newExo;
+
+  store.save(appData);
+  modal.close();
+  renderCalendarList();
+  if (selectedDay === new Date().getDay()) renderToday();
+});
+
+// ---- STATS ----
 function renderStats() {
-  $('#sessionsDone').textContent = appData.stats.sessionsDone;
-  $('#streakDays').textContent = appData.stats.streak;
-  const hist = $('#historyList'); hist.innerHTML='';
-  // Build basic history from progress keys
+  $('#kpiSessions').textContent = appData.stats.sessionsDone;
+  $('#kpiStreak').textContent = appData.stats.streak;
+
+  // Objectif hebdo
+  const goal = appData.settings.weeklyGoal || 5;
+  const doneThisWeek = countSessionsThisWeek();
+  const pct = Math.min(100, Math.round(doneThisWeek*100/goal));
+  $('#goalFill').style.width = pct + '%';
+  $('#goalText').textContent = `${doneThisWeek}/${goal}`;
+
+  // Historique
+  const hist = $('#historyList'); hist.innerHTML = '';
   Object.keys(appData.progress).sort().reverse().forEach(date=>{
-    const totalSets = Object.values(appData.progress[date]).reduce((a,b)=>a+b,0);
-    const li = document.createElement('li');
-    li.textContent = `${date} — ${totalSets} séries réalisées`;
+    const total = Object.values(appData.progress[date]).reduce((a,b)=>a+b,0);
+    const li = document.createElement('li'); li.textContent = `${date} — ${total} séries`;
     hist.append(li);
   });
+
+  drawWeeklyChart();
+}
+function startOfWeek(d=new Date()){ const n=new Date(d); const day=(n.getDay()+6)%7; n.setHours(0,0,0,0); n.setDate(n.getDate()-day); return n; }
+function countSessionsThisWeek(){
+  const start = startOfWeek().toISOString().slice(0,10);
+  return Object.keys(appData.progress).filter(k=>k>=start).length;
+}
+function drawWeeklyChart(){
+  const c = document.getElementById('chartWeekly');
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+
+  // last 7 days bars
+  const today = new Date();
+  const labels = [];
+  const values = [];
+  for(let i=6;i>=0;i--){
+    const d = new Date(today); d.setDate(d.getDate()-i);
+    const key = d.toISOString().slice(0,10);
+    const v = appData.progress[key] ? 1 : 0; // 1 si séance faite
+    labels.push(weekdayName(d.getDay()));
+    values.push(v);
+  }
+
+  const w = c.width, h = c.height, pad=20;
+  // axes
+  ctx.strokeStyle = '#4b5563'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pad, h-pad); ctx.lineTo(w-pad, h-pad); ctx.stroke();
+
+  const barW = (w-2*pad)/7*0.6;
+  values.forEach((v,i)=>{
+    const x = pad + (i+0.2)*((w-2*pad)/7);
+    const barH = v*(h-2*pad);
+    // background bar
+    ctx.fillStyle = '#1f2937';
+    ctx.fillRect(x, h-pad-(h-2*pad), barW, (h-2*pad));
+    // value bar
+    const grad = ctx.createLinearGradient(0,0,w,0);
+    grad.addColorStop(0, '#fb923c'); grad.addColorStop(1,'#3b82f6');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, h-pad-barH, barW, barH);
+    // label
+    ctx.fillStyle = '#9fb0d6'; ctx.font='12px system-ui';
+    ctx.textAlign='center';
+    ctx.fillText(labels[i], x+barW/2, h-4);
+  });
 }
 
-// ===== Stopwatch & Rest =====
+// ---- STOPWATCH ----
 let swInterval=null, swStartT=null, swElapsed=0;
-function updateStopwatch(){ const t = Date.now() - swStartT + swElapsed; const m=Math.floor(t/60000), s=Math.floor((t%60000)/1000), d=Math.floor((t%1000)/100); $('#stopwatch').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${d}`; }
-$('#swStart').onclick=()=>{ if(swInterval) return; swStartT=Date.now(); swInterval=setInterval(updateStopwatch,100); };
-$('#swPause').onclick=()=>{ if(!swInterval) return; swElapsed += Date.now()-swStartT; clearInterval(swInterval); swInterval=null; };
-$('#swReset').onclick=()=>{ swElapsed=0; swStartT=Date.now(); updateStopwatch(); };
-let restInterval=null, restLeft=0;
-function startRest(s){ clearInterval(restInterval); restLeft = s; $('#restCountdown').textContent = `Repos: ${restLeft}s`; restInterval=setInterval(()=>{ if(restLeft>0){restLeft--; $('#restCountdown').textContent=`Repos: ${restLeft}s`;} else { clearInterval(restInterval); notify('Repos terminé','Reprends la série !'); } },1000); }
-$$('#timer .card [data-rest]').forEach(b=>b.addEventListener('click', ()=>startRest(parseInt(b.dataset.rest,10))));
+function fmtStopwatch(ms){ const m=Math.floor(ms/60000), s=Math.floor((ms%60000)/1000), d=Math.floor((ms%1000)/100); return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}.${d}`; }
+function updateStopwatch(){ const t = Date.now() - swStartT + swElapsed; $('#stopwatch').textContent = fmtStopwatch(t); }
+$('#swStart').addEventListener('click', ()=>{ if(swInterval) return; swStartT=Date.now(); swInterval=setInterval(updateStopwatch,100); });
+$('#swPause').addEventListener('click', ()=>{ if(!swInterval) return; swElapsed += Date.now()-swStartT; clearInterval(swInterval); swInterval=null; });
+$('#swReset').addEventListener('click', ()=>{ swElapsed=0; swStartT=Date.now(); $('#stopwatch').textContent='00:00.0'; });
 
-// ===== Notifications & reminder =====
-async function askPermission(){ try{ const res = await Notification.requestPermission(); alert(res==='granted'?'Notifications autorisées':'Notifications refusées'); } catch(e){ alert('Notifications non supportées'); } }
-function notify(title, body){ if(Notification.permission==='granted'){ navigator.serviceWorker?.ready.then(r=>{ r.showNotification(title, { body }); }); } }
-$('#askNotify').onclick = askPermission;
-$('#testNotify').onclick = ()=> notify('Test', 'Ça marche !');
+// ---- REST COUNTDOWN with ring + beep ----
+let restTimer=null, restLeft=0, restTotal=0;
+function setArcProgress(p){ // p: 0..1
+  const CIRC=339.292; const off = CIRC*(1-p);
+  $('#restArc').style.strokeDashoffset = off;
+}
+function beep(){
+  try{
+    const a = new (window.AudioContext||window.webkitAudioContext)();
+    const o = a.createOscillator(); const g = a.createGain();
+    o.type='sine'; o.frequency.setValueAtTime(880,a.currentTime);
+    g.gain.setValueAtTime(0.0001,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.3,a.currentTime+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+0.25);
+    o.connect(g).connect(a.destination);
+    o.start(); o.stop(a.currentTime+0.26);
+  } catch(e){}
+}
+function startRest(s){
+  clearInterval(restTimer);
+  restLeft = restTotal = s;
+  $('#restDisplay').textContent = `${restLeft}s`;
+  setArcProgress(0);
+  restTimer = setInterval(()=>{
+    restLeft--;
+    const p = (restTotal-restLeft)/restTotal;
+    setArcProgress(p);
+    $('#restDisplay').textContent = `${Math.max(0,restLeft)}s`;
+    if (restLeft<=0){ clearInterval(restTimer); setArcProgress(1); beep(); notify('Repos terminé','Reprends la série !'); }
+  },1000);
+}
+$$('#timer [data-rest]').forEach(b=> b.addEventListener('click', ()=> startRest(parseInt(b.dataset.rest,10)) ));
 
-// simple local reminder check (fires when app est ouverte en arrière-plan)
+// ---- NOTIFICATIONS ----
+async function askPermission(){
+  try{
+    const res = await Notification.requestPermission();
+    alert(res==='granted'?'Notifications autorisées':'Notifications refusées');
+  } catch { alert('Notifications non supportées'); }
+}
+function notify(title, body){
+  if (Notification?.permission === 'granted') {
+    if (navigator.serviceWorker?.ready) {
+      navigator.serviceWorker.ready.then(r=> r.showNotification(title,{ body }) );
+    }
+  }
+}
+$('#askNotify').addEventListener('click', askPermission);
+$('#testNotify').addEventListener('click', ()=> notify('Test', 'Ça marche !'));
+
 function scheduleChecker(){
   const t = appData.settings.reminder || '18:00';
-  const [h,m]=t.split(':').map(x=>parseInt(x,10));
+  const [h,m]=t.split(':').map(n=>parseInt(n,10));
   setInterval(()=>{
     const d=new Date();
     if(d.getHours()===h && d.getMinutes()===m && d.getSeconds()<5){
@@ -216,32 +401,33 @@ function scheduleChecker(){
 $('#reminderTime').value = appData.settings.reminder || '18:00';
 $('#reminderTime').addEventListener('change', e=>{ appData.settings.reminder = e.target.value; store.save(appData); });
 
-// ===== Backup / restore / reset =====
-$('#backupBtn').onclick = ()=>{
+// ---- BACKUP / RESTORE / RESET ----
+$('#backupBtn').addEventListener('click', ()=>{
   const blob = new Blob([store.export()], {type:'application/json'});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url; a.download='muscu_backup.json'; a.click();
+  const a = document.createElement('a'); a.href=url; a.download='ismacoach_backup.json'; a.click();
   setTimeout(()=>URL.revokeObjectURL(url), 500);
-};
-$('#restoreBtn').onclick = ()=> $('#restoreInput').click();
+});
+$('#restoreBtn').addEventListener('click', ()=> $('#restoreInput').click());
 $('#restoreInput').addEventListener('change', async (e)=>{
   const file = e.target.files[0]; if(!file) return;
   const text = await file.text();
   store.import(text);
 });
+$('#resetAll').addEventListener('click', ()=>{
+  if (confirm('Tout réinitialiser ?')) {
+    localStorage.removeItem('ic.data'); appData = store.load(); renderAll();
+  }
+});
 
-$('#resetAll').onclick = ()=>{
-  if(confirm('Tout réinitialiser ?')){ localStorage.removeItem('mc.data'); appData = store.load(); renderAll(); }
-};
-
-// ===== Install prompt for Android/desktop (iOS uses Share > Add to Home) =====
+// ---- INSTALL PROMPT (Android/desktop) ----
 let deferredPrompt=null;
-window.addEventListener('beforeinstallprompt', (e)=>{ e.preventDefault(); deferredPrompt = e; $('#installBtn').hidden=false; });
-$('#installBtn').onclick=async()=>{ if(!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; $('#installBtn').hidden=true; };
+window.addEventListener('beforeinstallprompt', (e)=>{ e.preventDefault(); deferredPrompt=e; $('#installBtn').hidden=false; });
+$('#installBtn').addEventListener('click', async ()=>{ if(!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; $('#installBtn').hidden=true; });
 
-// ===== Service worker =====
+// ---- SERVICE WORKER ----
 if ('serviceWorker' in navigator) { navigator.serviceWorker.register('service-worker.js'); }
 
-// ===== Render all =====
-function renderAll(){ renderToday(); renderPlan(); renderStats(); }
+// ---- RENDER ----
+function renderAll(){ renderToday(); renderDayPicker(); renderCalendarList(); renderStats(); }
 renderAll(); scheduleChecker();
