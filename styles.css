@@ -1,159 +1,131 @@
-/* ================================
-   Palette et variables globales
-================================ */
+/* ====== Variables couleur ====== */
 :root {
-    --blue-dark: #0A2540;
-    --blue-light: #1E4E8C;
-    --orange: #FF7F11;
-    --grey-light: #F5F7FA;
-    --white: #FFFFFF;
-    --radius: 12px;
-    --shadow: 0 4px 12px rgba(0,0,0,0.08);
+    --bg-color: #f8f9fa;
+    --text-color: #0A2540;
+    --accent-color: #FF7F11;
+    --card-bg: #ffffff;
+    --border-radius: 14px;
 }
 
-/* ================================
-   Reset & base
-================================ */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: #0A2540;
+        --text-color: #f8f9fa;
+        --card-bg: #1a1f2b;
+    }
+}
+
+/* ====== Reset ====== */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background-color: var(--grey-light);
-    color: var(--blue-dark);
-    line-height: 1.6;
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    padding: 16px;
+    max-width: 500px;
+    margin: auto;
 }
 
-/* ================================
-   Mode sombre auto
-================================ */
-@media (prefers-color-scheme: dark) {
-    body {
-        background-color: var(--blue-dark);
-        color: var(--white);
-    }
-    .card {
-        background-color: #122b45;
-    }
-    button {
-        background-color: var(--orange);
-        color: var(--white);
-    }
+/* ====== Titre ====== */
+h1 {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+    text-align: center;
 }
 
-/* ================================
-   Cartes et conteneurs
-================================ */
+/* ====== Cartes ====== */
 .card {
-    background-color: var(--white);
-    border-radius: var(--radius);
-    padding: 1rem;
-    box-shadow: var(--shadow);
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 16px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 
-/* ================================
-   Boutons
-================================ */
+/* ====== Boutons ====== */
 button {
-    border: none;
-    border-radius: var(--radius);
-    padding: 0.8rem 1rem;
+    display: inline-block;
+    background: var(--accent-color);
+    color: #fff;
+    padding: 12px 18px;
     font-size: 1rem;
     font-weight: 600;
+    border: none;
+    border-radius: var(--border-radius);
     cursor: pointer;
-    background-color: var(--blue-dark);
-    color: var(--white);
-    transition: 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    justify-content: center;
-}
-
-button svg {
-    width: 20px;
-    height: 20px;
+    transition: background 0.3s ease;
 }
 
 button:hover {
-    background-color: var(--blue-light);
+    background: #e56f0f;
 }
 
-button.orange {
-    background-color: var(--orange);
+button:active {
+    transform: scale(0.97);
 }
 
-button.orange:hover {
-    background-color: #e36f0d;
+/* ====== Sélecteur de jour ====== */
+select {
+    width: 100%;
+    padding: 10px;
+    border-radius: var(--border-radius);
+    border: 1px solid #ccc;
+    font-size: 1rem;
+    margin-bottom: 10px;
 }
 
-/* ================================
-   Checklist / exercices
-================================ */
-.checklist {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-}
-
-.checklist-item {
+/* ====== Liste d’exercices ====== */
+.checkbox-item {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 10px;
+    padding: 8px 0;
+    font-size: 1rem;
 }
 
 input[type="checkbox"] {
-    accent-color: var(--orange);
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
+    accent-color: var(--accent-color);
 }
 
-/* ================================
-   Chronomètre
-================================ */
-.timer {
-    text-align: center;
-    font-size: 2rem;
-    font-weight: bold;
-    color: var(--orange);
-}
-
-.timer-circle {
-    width: 120px;
-    height: 120px;
-    border: 6px solid var(--orange);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 1rem auto;
-    font-size: 2rem;
-}
-
-/* ================================
-   Graphique / suivi
-================================ */
-.progress-bar {
-    height: 12px;
-    background-color: var(--grey-light);
-    border-radius: var(--radius);
+/* ====== Progress Bar ====== */
+.progress-container {
+    background: #ddd;
+    border-radius: var(--border-radius);
     overflow: hidden;
+    height: 14px;
+    margin: 10px 0;
 }
 
 .progress-fill {
+    background: var(--accent-color);
     height: 100%;
-    background-color: var(--orange);
-    width: 0%;
-    transition: width 0.5s ease;
+    width: 0;
+    transition: width 0.3s ease;
+}
+
+#progress-text {
+    font-size: 0.9rem;
+    text-align: center;
+    margin-top: 4px;
+}
+
+/* ====== Timer ====== */
+#timer-display {
+    font-size: 2rem;
+    text-align: center;
+    margin: 10px 0;
+    font-weight: bold;
+}
+
+/* ====== Icônes ====== */
+svg {
+    vertical-align: middle;
+    stroke: var(--text-color);
 }
